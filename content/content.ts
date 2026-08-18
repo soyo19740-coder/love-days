@@ -122,6 +122,8 @@ export const thingsILove: ThingILove[] = [
   { emoji: "🔥", text: "热情" },
   { emoji: "✨", text: "对生活充满活力" },
   { emoji: "🌱", text: "青春" },
+  { emoji: "😤", text: "傲娇" },
+  { emoji: "💬", text: "话题" },
 ];
 
 // ----------------------------- Vinyl playlist --------------------------------
