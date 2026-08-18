@@ -109,10 +109,23 @@ export const moments: Moment[] = [
 // Until you add images, the gallery shows a friendly "your photo here" frame,
 // so the layout never breaks while you build it out.
 
-export const photos: Photo[] = Array.from({ length: 6 }, () => ({
-  alt: "待添加的回忆照片",
-  caption: "[照片稍后添加]",
-}));
+export const photos: Photo[] = [
+  {
+    src: "/photos/01.jpg",
+    alt: "夜色与城市灯光前比出的心形手势",
+    caption: "夜色里的心形",
+  },
+  {
+    src: "/photos/02.jpg",
+    alt: "夜晚牵着手一起散步",
+    caption: "牵着手的夜晚",
+  },
+  {
+    src: "/photos/03.jpg",
+    alt: "两人十指相扣的手部特写",
+    caption: "十指相扣",
+  },
+];
 
 // ----------------------------- Things I love about you -----------------------
 // One short line per reason. Add or remove as many as you like.
