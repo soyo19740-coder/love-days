@@ -137,7 +137,7 @@ export const thingsILove: ThingILove[] = [
 // are public songs — replace them with the ones that mean something to you.
 
 export const vinylPlaylist: PlaylistTrack[] = [
-  { title: "Stay With Me", artist: "Spotify 链接待补充", uri: "" },
+  { title: "One Last Kiss", artist: "宇多田光", uri: "spotify:track:5RhWszHMSKzb7KiXk4Ae0M" },
 ];
 
 // ----------------------------- Date voucher (spin wheels) --------------------
