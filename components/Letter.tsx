@@ -14,6 +14,8 @@ export function Letter() {
   const flapControls = useAnimation();
   const sealControls = useAnimation();
   const letterControls = useAnimation();
+  const letterSections = LETTER.split("\n\n");
+  const signature = letterSections.pop() ?? "";
 
   async function open() {
     setAnimating(true);
@@ -227,8 +229,8 @@ export function Letter() {
                 borderTop: "1px solid var(--blush)",
               }}
             >
-              <p
-                className="leading-relaxed whitespace-pre-line"
+              <div
+                className="leading-relaxed"
                 style={{
                   fontFamily: "var(--font-caveat)",
                   color: "var(--ink)",
@@ -236,8 +238,13 @@ export function Letter() {
                   lineHeight: 1.7,
                 }}
               >
-                {LETTER}
-              </p>
+                {letterSections.map((section, index) => (
+                  <p key={`${section.slice(0, 12)}-${index}`} className="whitespace-pre-line mb-5 last:mb-0">
+                    {section}
+                  </p>
+                ))}
+                <p className="text-right mt-8 mb-0">{signature}</p>
+              </div>
             </div>
           </motion.div>
         </motion.div>
