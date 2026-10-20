@@ -1,41 +1,11 @@
 "use client";
-
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, useAnimationFrame } from "motion/react";
 import { vinylPlaylist } from "@/content/content";
 
-declare global {
-  interface Window {
-    onSpotifyIframeApiReady: (api: SpotifyIFrameAPI) => void;
-  }
-}
-interface SpotifyIFrameAPI {
-  createController(
-    element: HTMLElement,
-    options: { uri: string },
-    callback: (controller: SpotifyController) => void
-  ): void;
-}
-interface SpotifyPlaybackEvent {
-  data: { isPaused: boolean; position: number; duration: number; playingURI: string };
-}
-interface SpotifyController {
-  play(): void;
-  togglePlay(): void;
-  loadUri(uri: string): void;
-  seek(positionMs: number): void;
-  addListener(event: "playback_update", cb: (e: SpotifyPlaybackEvent) => void): void;
-  destroy(): void;
-}
-
-// tonearm angles (CSS rotate) — rough visual direction of each:
-// REST ≈ pointing left; OUTER (1st track) ≈ left and slightly down;
-// INNER (last track) keeps swinging down/inward, like a real turntable
-// needle advancing toward the center of the disc.
 const TONEARM_REST_ANGLE = 70;
 const TONEARM_OUTER_ANGLE = 50;
 const TONEARM_INNER_ANGLE = 31;
-const firstPlayableTrack = vinylPlaylist.find((track) => track.uri.startsWith("spotify:"));
 
 function tonearmAngleForTrack(index: number, total: number) {
   if (total <= 1) return TONEARM_OUTER_ANGLE;
@@ -45,89 +15,68 @@ function tonearmAngleForTrack(index: number, total: number) {
 
 export function Vinyl() {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [ready, setReady] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const controllerRef = useRef<SpotifyController | null>(null);
-  const embedRef = useRef<HTMLDivElement>(null);
-  // Spotify resumes tracks from the saved position (same logic as podcasts);
-  // we store the uri we just requested so we can reset the position as soon as
-  // it starts playing — only once, so it doesn't interfere with pause/resume.
-  const pendingResetUriRef = useRef<string | null>(null);
-  const currentTrack = vinylPlaylist[currentTrackIndex];
-
-  // disc rotation via useAnimationFrame — no snap/jump on pause/resume
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const rotation = useMotionValue(0);
   const rotationAccum = useRef(0);
   const isPlayingRef = useRef(false);
+  const currentTrack = vinylPlaylist[currentTrackIndex];
+
   useEffect(() => {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
+
   useAnimationFrame((_t, delta) => {
     if (!isPlayingRef.current) return;
-    rotationAccum.current += delta * 0.072; // 360° / 5000ms
+    rotationAccum.current += delta * 0.072;
     rotation.set(rotationAccum.current);
   });
 
   useEffect(() => {
-    if (!firstPlayableTrack) return;
+    if (!audioRef.current || !currentTrack) return;
+    audioRef.current.src = currentTrack.src;
+    audioRef.current.load();
+    if (isPlaying) {
+      audioRef.current.play().catch(e => console.log("播放失败：", e));
+    }
+  }, [currentTrackIndex]);
 
-    const script = document.createElement("script");
-    script.src = "https://open.spotify.com/embed/iframe-api/v1";
-    script.async = true;
-    document.body.appendChild(script);
+  const handlePlayPause = async () => {
+    if (!audioRef.current) return;
+    try {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        await audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    } catch (err) {
+      console.log("音频错误", err);
+    }
+  };
 
-    window.onSpotifyIframeApiReady = (IFrameAPI) => {
-      if (!embedRef.current) return;
-      IFrameAPI.createController(
-        embedRef.current,
-        { uri: firstPlayableTrack.uri },
-        (controller) => {
-          controllerRef.current = controller;
-          pendingResetUriRef.current = firstPlayableTrack.uri;
-          setReady(true);
-          controller.addListener("playback_update", (e) => {
-            setIsPlaying(!e.data.isPaused);
-            const { playingURI, position } = e.data;
-            if (pendingResetUriRef.current && playingURI === pendingResetUriRef.current) {
-              pendingResetUriRef.current = null;
-              if (position > 1000) controller.seek(0);
-            }
-          });
-        }
-      );
-    };
-
-    return () => {
-      script.remove();
-      controllerRef.current?.destroy();
-    };
-  }, []);
-
-  function handlePlayPause() {
-    controllerRef.current?.togglePlay();
-  }
-
-  function goToTrack(index: number) {
-    const track = vinylPlaylist[index];
-    if (!track?.uri || !controllerRef.current) return;
-    pendingResetUriRef.current = track.uri;
-    controllerRef.current.loadUri(track.uri);
-    controllerRef.current.play();
+  const goToTrack = (index: number) => {
     setCurrentTrackIndex(index);
-  }
+    setIsPlaying(true);
+  };
 
-  function handlePrevious() {
-    goToTrack(currentTrackIndex === 0 ? vinylPlaylist.length - 1 : currentTrackIndex - 1);
-  }
+  const handlePrevious = () => {
+    const idx = currentTrackIndex === 0 ? vinylPlaylist.length - 1 : currentTrackIndex - 1;
+    goToTrack(idx);
+  };
 
-  function handleNext() {
-    goToTrack(currentTrackIndex === vinylPlaylist.length - 1 ? 0 : currentTrackIndex + 1);
-  }
+  const handleNext = () => {
+    const idx = currentTrackIndex === vinylPlaylist.length - 1 ? 0 : currentTrackIndex + 1;
+    goToTrack(idx);
+  };
+
+  const onAudioEnded = () => {
+    handleNext();
+  };
 
   return (
     <section aria-label="我们的歌" className="py-24 px-6">
       <div className="max-w-sm mx-auto flex flex-col items-center gap-8">
-        {/* heading */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -156,7 +105,6 @@ export function Vinyl() {
           </h2>
         </motion.div>
 
-        {/* turntable */}
         <motion.div
           initial={{ opacity: 0, scale: 0.92 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -171,7 +119,6 @@ export function Vinyl() {
             boxShadow: "0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)",
           }}
         >
-          {/* platter recess — centered: (280-210)/2 = 35 */}
           <div
             style={{
               position: "absolute",
@@ -184,8 +131,6 @@ export function Vinyl() {
               boxShadow: "inset 0 4px 16px rgba(0,0,0,0.8)",
             }}
           />
-
-          {/* vinyl disc — centered: (280-196)/2 = 42 */}
           <motion.div
             style={{
               rotate: rotation,
@@ -203,7 +148,6 @@ export function Vinyl() {
               justifyContent: "center",
             }}
           >
-            {/* grooves */}
             {[20, 38, 56].map((inset) => (
               <div
                 key={inset}
@@ -216,7 +160,6 @@ export function Vinyl() {
                 }}
               />
             ))}
-            {/* label */}
             <div
               style={{
                 position: "relative",
@@ -240,7 +183,6 @@ export function Vinyl() {
               >
                 ♥
               </span>
-              {/* spindle hole */}
               <div
                 style={{
                   position: "absolute",
@@ -252,8 +194,6 @@ export function Vinyl() {
               />
             </div>
           </motion.div>
-
-          {/* tonearm */}
           <motion.div
             animate={{
               rotate: isPlaying
@@ -274,7 +214,6 @@ export function Vinyl() {
           </motion.div>
         </motion.div>
 
-        {/* now playing */}
         <div
           style={{
             minHeight: "2.6rem",
@@ -300,11 +239,9 @@ export function Vinyl() {
           </AnimatePresence>
         </div>
 
-        {/* controls: previous / play-pause / next */}
         <div className="flex items-center justify-center gap-4">
           <motion.button
             onClick={handlePrevious}
-            disabled={!ready}
             whileTap={{ scale: 0.9 }}
             style={{
               width: 40,
@@ -316,30 +253,27 @@ export function Vinyl() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              cursor: ready ? "pointer" : "default",
-              opacity: ready ? 1 : 0.6,
-              transition: "background 0.2s, opacity 0.2s",
+              cursor: "pointer",
+              transition: "background 0.2s",
             }}
             aria-label="上一首"
           >
             <PreviousIcon />
           </motion.button>
-
           <motion.button
             onClick={handlePlayPause}
-            disabled={!ready}
             whileTap={{ scale: 0.94 }}
             style={{
               width: 52,
               height: 52,
               borderRadius: "50%",
               border: "none",
-              background: ready ? "var(--rose)" : "var(--blush)",
+              background: "var(--rose)",
               color: "white",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              cursor: ready ? "pointer" : "default",
+              cursor: "pointer",
               boxShadow: "0 4px 16px rgba(201,96,90,0.3)",
               transition: "background 0.2s",
             }}
@@ -347,10 +281,8 @@ export function Vinyl() {
           >
             {isPlaying ? <PauseIcon /> : <PlayIcon />}
           </motion.button>
-
           <motion.button
             onClick={handleNext}
-            disabled={!ready}
             whileTap={{ scale: 0.9 }}
             style={{
               width: 40,
@@ -362,9 +294,8 @@ export function Vinyl() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              cursor: ready ? "pointer" : "default",
-              opacity: ready ? 1 : 0.6,
-              transition: "background 0.2s, opacity 0.2s",
+              cursor: "pointer",
+              transition: "background 0.2s",
             }}
             aria-label="下一首"
           >
@@ -372,26 +303,7 @@ export function Vinyl() {
           </motion.button>
         </div>
 
-        {/* spotify embed (headless playback engine — kept out of view).
-            separate wrapper: Spotify rewrites the styles of the element that
-            receives the controller, so it must stay "clean" and the visual
-            hiding lives on an outer element it doesn't touch. */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            width: 1,
-            height: 1,
-            overflow: "hidden",
-            clipPath: "inset(50%)",
-            whiteSpace: "nowrap",
-            border: 0,
-            padding: 0,
-            margin: -1,
-          }}
-        >
-          <div ref={embedRef} />
-        </div>
+        <audio ref={audioRef} onEnded={onAudioEnded} />
       </div>
     </section>
   );
@@ -406,10 +318,8 @@ function TonearmSVG() {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* pivot base */}
       <circle cx="58" cy="10" r="9" fill="#4a3728" stroke="#6b5040" strokeWidth="1.5" />
       <circle cx="58" cy="10" r="4" fill="#2d1f1a" />
-      {/* arm */}
       <path
         d="M52 16 L18 108"
         stroke="#8a7060"
@@ -422,14 +332,12 @@ function TonearmSVG() {
         strokeWidth="1.5"
         strokeLinecap="round"
       />
-      {/* headshell */}
       <path
         d="M18 108 L10 118 L22 122 L26 112 Z"
         fill="#5a4535"
         stroke="#6b5040"
         strokeWidth="1"
       />
-      {/* stylus/needle */}
       <line
         x1="16"
         y1="119"
@@ -442,7 +350,6 @@ function TonearmSVG() {
     </svg>
   );
 }
-
 function PlayIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -450,7 +357,6 @@ function PlayIcon() {
     </svg>
   );
 }
-
 function PauseIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -459,7 +365,6 @@ function PauseIcon() {
     </svg>
   );
 }
-
 function PreviousIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -468,12 +373,11 @@ function PreviousIcon() {
     </svg>
   );
 }
-
 function NextIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
       <polygon points="5,5 5,19 16,12" />
-      <rect x="16" y="5" width="3" height="14" rx="1" />
+      <rect x="16" y="5" width="3" height="16" rx="1" />
     </svg>
   );
 }

@@ -85,7 +85,7 @@ export function Counter() {
               className="text-sm mt-1"
               style={{ fontFamily: "var(--font-nunito)", color: "var(--ink-soft)" }}
             >
-              从 2026 年 5 月 8 日开始
+              从 2026 年 6 月 22 日开始
             </p>
           </motion.div>
         )}
