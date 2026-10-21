@@ -55,7 +55,7 @@ export interface PlaylistTrack {
 // These two dates drive the "days together" counter and two anchor milestones.
 
 /** When it all began — base for the days-together counter. */
-export const START_DATE = "2026-06-22";
+export const START_DATE = "2026-05-08";
 
 /** The day you made it official. */
 export const PROPOSAL_DATE = "";

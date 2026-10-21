@@ -26,6 +26,7 @@ function daysTogether(): number {
 
 export function Counter() {
   const [days, setDays] = useState<number | null>(null);
+  const [year, month, day] = START_DATE.split("-").map(Number);
 
   // Computed on the client after mount on purpose: the value depends on the
   // current date, so rendering it on the server would cause a hydration mismatch.
@@ -85,7 +86,7 @@ export function Counter() {
               className="text-sm mt-1"
               style={{ fontFamily: "var(--font-nunito)", color: "var(--ink-soft)" }}
             >
-              从 2026 年 6 月 22 日开始
+              从 {year} 年 {month} 月 {day} 日开始
             </p>
           </motion.div>
         )}
