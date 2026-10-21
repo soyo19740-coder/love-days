@@ -57,6 +57,9 @@ export interface PlaylistTrack {
 /** When it all began — base for the days-together counter. */
 export const START_DATE = "2026-05-08";
 
+/** When the relationship began — base for the days-together counter. */
+export const TOGETHER_DATE = "2026-06-22";
+
 /** The day you made it official. */
 export const PROPOSAL_DATE = "";
 

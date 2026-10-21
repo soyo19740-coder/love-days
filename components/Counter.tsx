@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { START_DATE } from "@/content/content";
+import { TOGETHER_DATE } from "@/content/content";
 
 function daysTogether(): number {
-  const [year, month, day] = START_DATE.split("-").map(Number);
+  const [year, month, day] = TOGETHER_DATE.split("-").map(Number);
   const start = new Date(year, month - 1, day).getTime();
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Shanghai",
@@ -26,7 +26,7 @@ function daysTogether(): number {
 
 export function Counter() {
   const [days, setDays] = useState<number | null>(null);
-  const [year, month, day] = START_DATE.split("-").map(Number);
+  const [year, month, day] = TOGETHER_DATE.split("-").map(Number);
 
   // Computed on the client after mount on purpose: the value depends on the
   // current date, so rendering it on the server would cause a hydration mismatch.
