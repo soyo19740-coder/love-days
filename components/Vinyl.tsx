@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useMotionValue, useAnimationFrame } from "motion/react";
 import { vinylPlaylist } from "@/content/content";
+import { nextTrackIndex, resolveAudioSrc } from "./audioPlayback.mjs";
 
 const TONEARM_REST_ANGLE = 70;
 const TONEARM_OUTER_ANGLE = 50;
@@ -34,12 +35,15 @@ export function Vinyl() {
 
   useEffect(() => {
     if (!audioRef.current || !currentTrack) return;
-    audioRef.current.src = currentTrack.src;
+    audioRef.current.src = resolveAudioSrc(
+      currentTrack.src,
+      process.env.NEXT_PUBLIC_BASE_PATH ?? "",
+    );
     audioRef.current.load();
-    if (isPlaying) {
-      audioRef.current.play().catch(e => console.log("播放失败：", e));
+    if (isPlayingRef.current) {
+      audioRef.current.play().catch(() => setIsPlaying(false));
     }
-  }, [currentTrackIndex]);
+  }, [currentTrack, currentTrackIndex]);
 
   const handlePlayPause = async () => {
     if (!audioRef.current) return;
@@ -50,28 +54,43 @@ export function Vinyl() {
         await audioRef.current.play();
       }
       setIsPlaying(!isPlaying);
-    } catch (err) {
-      console.log("音频错误", err);
+    } catch {
+      setIsPlaying(false);
     }
   };
 
-  const goToTrack = (index: number) => {
+  const goToTrack = async (index: number) => {
+    if (index === currentTrackIndex) {
+      if (!audioRef.current) return;
+      audioRef.current.currentTime = 0;
+      try {
+        await audioRef.current.play();
+        setIsPlaying(true);
+      } catch {
+        setIsPlaying(false);
+      }
+      return;
+    }
     setCurrentTrackIndex(index);
     setIsPlaying(true);
   };
 
   const handlePrevious = () => {
-    const idx = currentTrackIndex === 0 ? vinylPlaylist.length - 1 : currentTrackIndex - 1;
-    goToTrack(idx);
+    const idx = nextTrackIndex(currentTrackIndex, vinylPlaylist.length, -1);
+    if (idx !== null) void goToTrack(idx);
   };
 
   const handleNext = () => {
-    const idx = currentTrackIndex === vinylPlaylist.length - 1 ? 0 : currentTrackIndex + 1;
-    goToTrack(idx);
+    const idx = nextTrackIndex(currentTrackIndex, vinylPlaylist.length, 1);
+    if (idx !== null) void goToTrack(idx);
   };
 
   const onAudioEnded = () => {
-    handleNext();
+    if (vinylPlaylist.length <= 1) {
+      setIsPlaying(false);
+    } else {
+      handleNext();
+    }
   };
 
   return (
@@ -303,7 +322,7 @@ export function Vinyl() {
           </motion.button>
         </div>
 
-        <audio ref={audioRef} onEnded={onAudioEnded} />
+        <audio ref={audioRef} onEnded={onAudioEnded} onError={() => setIsPlaying(false)} />
       </div>
     </section>
   );
