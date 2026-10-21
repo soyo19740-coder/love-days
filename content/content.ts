@@ -143,7 +143,7 @@ export const photos: Photo[] = [
   {
     src: "/photos/07.jpg",
     alt: "去逛学校对面的夜市",
-    caption: "逛华阳胡夜市",
+    caption: "逛华阳湖夜市",
   },
   {
     src: "/photos/08.jpg",
