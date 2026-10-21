@@ -48,14 +48,14 @@ export interface PlaylistTrack {
   /** Artist / band name */
   artist: string;
   /** URI in the form "spotify:track:XXXXXXXXXXXXXXXXXXXXXX" (not the https:// link) */
-  uri: string;
+  src: string;
 }
 
 // ----------------------------- Key dates -------------------------------------
 // These two dates drive the "days together" counter and two anchor milestones.
 
 /** When it all began — base for the days-together counter. */
-export const START_DATE = "2026-05-08";
+export const START_DATE = "2026-06-22";
 
 /** The day you made it official. */
 export const PROPOSAL_DATE = "";
@@ -97,7 +97,7 @@ export const moments: Moment[] = [
     description: "我们互相送出了第一份礼物。",
   },
   {
-    date: "2026-08-09",
+    date: "2026-08-08",
     title: "第一次约会",
     description: "这是我们第一次一起出门约会。",
     anchor: true,
@@ -125,6 +125,36 @@ export const photos: Photo[] = [
     alt: "两人十指相扣的手部特写",
     caption: "十指相扣",
   },
+  {
+    src: "/photos/04.jpg",
+    alt: "冰与火玫瑰",
+    caption: "自然生长的蓝玫瑰?",
+  },
+  {
+    src: "/photos/05.jpg",
+    alt: "爬山看日落",
+    caption: "旗峰公园看日落",
+  },
+  {
+    src: "/photos/06.jpg",
+    alt: "好吃的饼干",
+    caption: "白色恋人",
+  },
+  {
+    src: "/photos/07.jpg",
+    alt: "去逛学校对面的夜市",
+    caption: "逛华阳胡夜市",
+  },
+  {
+    src: "/photos/08.jpg",
+    alt: "第一次摸小猫咪",
+    caption: "摸小猫",
+  },
+  {
+    src: "/photos/09.jpg",
+    alt: "在市民中心躺下看夜景",
+    caption: "散步中途休息",
+  },
 ];
 
 // ----------------------------- Things I love about you -----------------------
@@ -150,8 +180,9 @@ export const thingsILove: ThingILove[] = [
 // are public songs — replace them with the ones that mean something to you.
 
 export const vinylPlaylist: PlaylistTrack[] = [
-  { title: "One Last Kiss", artist: "宇多田光", uri: "spotify:track:5RhWszHMSKzb7KiXk4Ae0M" },
+  { title: "One Last Kiss", artist: "宇多田光", src: "/music/one-last-kiss.mp3" },
 ];
+
 
 // ----------------------------- Date voucher (spin wheels) --------------------
 // A sequence of wheels that draw, one by one, how your next date will go.
